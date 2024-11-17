@@ -20,8 +20,20 @@ class DataSource(ABC):
 
     def collect(self) -> List[Dict]:
         """Main method to fetch and process data"""
+        # self.logger.info(f"Collecting data from {self.__class__.__name__}")
         raw_data = self.fetch()
+        # self.logger.info(f"Data collected from {raw_data}")
+
         if not raw_data:
             self.logger.warning("No data fetched")
             return []
-        return self.process(raw_data)
+        
+        self.logger.info(f"Processing data from {self.__class__.__name__}")
+        processed_data = self.process(raw_data)
+        self.logger.info(f"Data processed from {processed_data}")
+
+        if not processed_data:
+            self.logger.warning("No data processed")
+            return []
+        
+        return processed_data

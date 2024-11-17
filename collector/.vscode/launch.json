@@ -1,21 +1,33 @@
-// .vscode/launch.json
 {
-  "version": "0.2.0",
-  "configurations": [
-      {
-          "name": "Python: Remote Attach",
-          "type": "python",
-          "request": "attach",
-          "connect": {
-              "host": "localhost",
-              "port": 5678
-          },
-          "pathMappings": [
-              {
-                  "localRoot": "${workspaceFolder}",
-                  "remoteRoot": "/app"
-              }
-          ]
-      }
-  ]
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Local Debug",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/apps/collector/main.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "COLLECTION_INTERVAL": "60",
+                "PYTHONPATH": "${workspaceFolder}/apps/collector"
+            }
+        },
+        {
+            "name": "Python: Remote Attach",
+            "type": "debugpy",
+            "request": "attach",
+            "connect": {
+                "host": "localhost",
+                "port": 5678
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}/apps/collector",
+                    "remoteRoot": "/app"
+                }
+            ],
+            "justMyCode": false
+        }
+    ]
 }

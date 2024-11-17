@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class DataCollector:
     def __init__(self, config):
         self.sources = {
-            'crypto': CryptoPrice(config),
+            # 'crypto': CryptoPrice(config),
             'news': NewsRSSSource(config)
         }
 
@@ -23,7 +23,12 @@ class DataCollector:
 
         for source_name, source in self.sources.items():
             try:
+                logger.info(f"Collecting data from {source_name}")
+                logger.debug(f"Config for {source_name}: {source.config}")
                 collected_data['data'][source_name] = source.collect()
+
+                logger.info(f"Data collected from {source_name}")
+                logger.debug(f"Collected data for {source_name}: {collected_data['data'][source_name]}")
             except Exception as e:
                 logger.error(f"Error collecting from {source_name}: {str(e)}")
                 collected_data['data'][source_name] = []
