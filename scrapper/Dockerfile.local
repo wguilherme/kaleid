@@ -7,5 +7,6 @@ WORKDIR /app
 COPY requirements*.txt ./
 RUN pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
 
+
 # Mantém como root para desenvolvimento
 CMD ["python", "main.py"]

@@ -5,7 +5,7 @@ services:
   collector:
     build:
       context: .
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile.local
     volumes:
       - .:/app
       - /app/__pycache__

@@ -1,28 +1,27 @@
 # sources/base.py
 from abc import ABC, abstractmethod
-from typing import Dict, List
-from datetime import datetime
+from typing import Dict, List, Any
 import logging
 
-logger = logging.getLogger(__name__)
-
 class DataSource(ABC):
-    def __init__(self, config: Dict):
+    def __init__(self, config: Dict[str, Any]):
         self.config = config
-    
+        self.logger = logging.getLogger(self.__class__.__name__)
+
     @abstractmethod
     def fetch(self) -> List[Dict]:
+        """Fetches raw data from the source"""
         pass
 
     @abstractmethod
     def process(self, data: List[Dict]) -> List[Dict]:
+        """Processes the raw data into standardized format"""
         pass
-    
-    def execute(self) -> List[Dict]:
-        try:
-            raw_data = self.fetch()
-            processed_data = self.process(raw_data)
-            return processed_data
-        except Exception as e:
-            logger.error(f"Error in {self.__class__.__name__}: {str(e)}")
+
+    def collect(self) -> List[Dict]:
+        """Main method to fetch and process data"""
+        raw_data = self.fetch()
+        if not raw_data:
+            self.logger.warning("No data fetched")
             return []
+        return self.process(raw_data)
