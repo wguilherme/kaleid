@@ -9,10 +9,10 @@ import os
 logger = logging.getLogger(__name__)
 
 class DataCollector:
-    def __init__(self):
+    def __init__(self, config):
         self.sources = {
-            'crypto': CryptoPrice(),
-            'news': NewsRSSSource()
+            'crypto': CryptoPrice(config),
+            'news': NewsRSSSource(config)
         }
 
     def collect(self) -> Dict[str, Any]:
