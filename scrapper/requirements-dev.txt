@@ -1,0 +1,17 @@
+# Framework de testes - permite criar e executar testes automatizados
+pytest~=7.4.3
+
+# Formatador de código - mantém um estilo consistente automaticamente
+black~=23.11.0
+
+# Linter - verifica erros de estilo e possíveis bugs
+flake8~=6.1.0
+
+# Verificador de tipos estáticos - encontra erros de tipagem antes da execução
+mypy~=1.7.0
+
+# Monitor de arquivos - detecta mudanças em arquivos para hot-reload
+watchdog~=3.0.0
+
+# Permite debugging remoto - integração com VS Code e outras IDEs
+debugpy~=1.8.0

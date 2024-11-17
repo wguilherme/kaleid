@@ -1,0 +1,18 @@
+# docker-compose.dev.yml
+version: "3.8"
+
+services:
+  collector:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+      - /app/__pycache__
+      - /app/sources/__pycache__
+      - /app/processors/__pycache__
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+    ports:
+      - "5678:5678" # para debugging

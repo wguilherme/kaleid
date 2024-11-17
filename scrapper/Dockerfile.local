@@ -1,0 +1,11 @@
+# Dockerfile.dev
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Instala ferramentas de desenvolvimento
+COPY requirements*.txt ./
+RUN pip install --no-cache-dir -r requirements-dev.txt
+
+# Mantém como root para desenvolvimento
+CMD ["python", "main.py"]
