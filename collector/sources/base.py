@@ -1,6 +1,8 @@
 # sources/base.py
 from abc import ABC, abstractmethod
 from typing import Dict, List, Any
+from bs4 import BeautifulSoup
+import re
 import logging
 
 class DataSource(ABC):
@@ -17,6 +19,34 @@ class DataSource(ABC):
     def process(self, data: List[Dict]) -> List[Dict]:
         """Processes the raw data into standardized format"""
         pass
+
+    @staticmethod
+    def clean_html(html_content: str) -> str:
+        """Remove HTML tags and clean up text content."""
+        if not html_content:
+            return ''
+        
+        try:
+            # Remove HTML tags
+            soup = BeautifulSoup(html_content, 'html.parser')
+            text = soup.get_text()
+            
+            # Remove extra whitespace
+            text = re.sub(r'\s+', ' ', text).strip()
+            
+            return text
+        except Exception as e:
+            logger.error(f"Error cleaning HTML content: {str(e)}")
+            return html_content
+
+    @staticmethod
+    def clean_and_truncate(html_content: str, max_length: int = 500) -> str:
+        """Clean HTML and truncate to specified length."""
+        clean_text = DataSource.clean_html(html_content)
+        if len(clean_text) > max_length:
+            return clean_text[:max_length] + '...'
+        return clean_text
+
 
     def collect(self) -> List[Dict]:
         """Main method to fetch and process data"""

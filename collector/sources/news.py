@@ -44,29 +44,29 @@ class NewsRSSSource(DataSource):
         logger.info(f"Processing {len(entries)} entries")
 
         # Processa o primeiro item separadamente para poder logar
-        first_entry = entries[0]
+        # first_entry = entries[0]
 
-        try:
-            first_processed = {
-                'type': 'news',
-                'source': source_url,
-                'title': getattr(first_entry, 'title', 'No title'),
-                'description': getattr(first_entry, 'description', 'No description'),
-                'link': getattr(first_entry, 'link', 'No link'),
-                'pub_date': getattr(first_entry, 'published', 'No date'),
-                'collected_at': datetime.now().isoformat()
-            }
-        except Exception as e:
-            logger.error(f"Error processing first entry: {str(e)}")
-            first_processed = None
+        # try:
+        #     first_processed = {
+        #         'type': 'news',
+        #         'source': source_url,
+        #         'title': getattr(first_entry, 'title', 'No title'),
+        #         'description': getattr(first_entry, 'description', 'No description'),
+        #         'link': getattr(first_entry, 'link', 'No link'),
+        #         'pub_date': getattr(first_entry, 'published', 'No date'),
+        #         'collected_at': datetime.now().isoformat()
+        #     }
+        # except Exception as e:
+        #     logger.error(f"Error processing first entry: {str(e)}")
+        #     first_processed = None
         
-        logger.info(f"First processed entry: {first_processed}")
+        # logger.info(f"First processed entry: {first_processed}")
 
         return [{
             'type': 'news',
             'source': source_url,
             'title': entry.title,
-            'description': entry.description,
+            'description': self.clean_html(entry.description),
             'link': entry.link,
             'pub_date': entry.published,
             'collected_at': datetime.now().isoformat()
