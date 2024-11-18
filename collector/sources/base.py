@@ -150,11 +150,10 @@ class DataSource(ABC):
                 prompt += "\n"
 
             prompt += """
-                Forneça uma análise abrangente que inclua:
-                - Um resumo geral dos principais acontecimentos
-                - Conexões ou padrões identificados entre as notícias
-                - Tópicos mais relevantes
-                - Uma análise do cenário geral
+                 Forneça uma síntese executiva e objetiva seguindo este formato:
+                - Mantenha cada tópico conciso, direto e focado apenas no essencial.
+                - Priorize informações acionáveis e de alto impacto.
+                - Use linguagem clara e evite redundâncias.
                 """
 
             response = self.openai_client.chat.completions.create(
@@ -177,7 +176,7 @@ class DataSource(ABC):
                 .replace('  ', ' ')   # Remove espaços duplos
                 .strip()              # Remove espaços extras no início e fim
             )
-            
+
             return {
                 'master_summary': master_summary,
                 'source_count': len(summaries_by_source),
