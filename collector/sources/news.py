@@ -60,7 +60,7 @@ class NewsRSSSource(DataSource):
             logger.error(f"Error processing first entry: {str(e)}")
             first_processed = None
         
-        logger.info(f"First processed entry: {first_processed}")
+        # logger.info(f"First processed entry: {first_processed}")
 
         return [{
             'type': 'news',
@@ -70,4 +70,4 @@ class NewsRSSSource(DataSource):
             'link': entry.link,
             'pub_date': entry.published,
             'collected_at': datetime.now().isoformat()
-        } for entry in entries]
+        } for entry in entries[:3]]

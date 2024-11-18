@@ -17,12 +17,12 @@ class GPTProcessor:
             
         try:
             user_content = f"""Title: {data['title']}
-Content: {data['description']}
+            Content: {data['description']}
 
-Summarize this news article in 2-3 sentences. Then provide:
-1. Main topic (1-3 words)
-2. Key entities mentioned
-3. Sentiment (positive/neutral/negative)"""
+            Summarize this news article in 2-3 sentences. Then provide:
+            1. Main topic (1-3 words)
+            2. Key entities mentioned
+            3. Sentiment (positive/neutral/negative)"""
 
             response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",

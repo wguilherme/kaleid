@@ -92,15 +92,15 @@ class DataSource(ABC):
             self.logger.warning("No data fetched")
             return []
         
-        self.logger.info(f"Processing data from {self.__class__.__name__}")
+        self.logger.info(f"Processing data, {self.__class__.__name__}")
         processed_data = self.process(raw_data)
-        self.logger.info(f"Data processed from {processed_data}")
+        self.logger.info(f"Data processed from, {self.__class__.__name__}")
 
         if not processed_data:
             self.logger.warning("No data processed")
             return []
 
-                # Adicionar aqui o enrich
+        # Adicionar aqui o enrich
         enriched_data = self.enrich(processed_data)
 
         if not enriched_data:
@@ -108,9 +108,24 @@ class DataSource(ABC):
             return []
 
         self.logger.info(f"Data enriched from {self.__class__.__name__}")
-        self.logger.debug(f"Enriched data: {enriched_data}")
+        # self.logger.debug(f"Enriched data: {enriched_data}")
+
+        try:
+            master_summary = self.generate_master_summary(enriched_data)
+            enriched_data.insert(0, {
+                'type': 'master_summary',
+                'title': 'Master Summary',
+                'description': master_summary['master_summary'],
+                'source': 'all_sources',
+                'pub_date': datetime.now().isoformat(),
+                'source_count': master_summary['source_count'],
+                'total_items': master_summary['total_items'],
+                'sources': master_summary['sources']
+            })
+        except Exception as e:
+            self.logger.error(f"Error adding master summary: {str(e)}")
         
-        return enriched_data
+        return master_summary
 
     def generate_master_summary(self, all_sources_data: List[Dict]) -> Dict:
         """Generate a master summary from all sources"""
@@ -125,23 +140,44 @@ class DataSource(ABC):
                     summaries_by_source[source].append(item['individual_summary'])
 
             # Cria prompt para resumo final
-            prompt = "Analisando todas as notícias coletadas:\n\n"
-            
+            prompt = """Analisando todas as notícias coletadas:
+
+    """
             for source, summaries in summaries_by_source.items():
-                prompt += f"\nFonte: {source}\n"
+                prompt += f"Fonte: {source}\n"
                 for summary in summaries:
                     prompt += f"- {summary}\n"
+                prompt += "\n"
 
             prompt += """
-            Por favor, gere:
-            1. Um resumo geral dos principais acontecimentos
-            2. Conexões ou padrões entre as notícias
-            3. Tópicos mais relevantes
-            4. Uma análise do cenário geral
-            """
+                Forneça uma análise abrangente que inclua:
+                - Um resumo geral dos principais acontecimentos
+                - Conexões ou padrões identificados entre as notícias
+                - Tópicos mais relevantes
+                - Uma análise do cenário geral
+                """
 
-            master_summary = self._call_llm(prompt)
+            response = self.openai_client.chat.completions.create(
+                model=self.config.get('llm', {}).get('model', 'gpt-3.5-turbo'),
+                messages=[
+                    {"role": "system", "content": "Você é um analista especializado em sintetizar informações de múltiplas fontes e identificar padrões relevantes."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=self.config.get('llm', {}).get('temperature', 0.7),
+                max_tokens=self.config.get('llm', {}).get('max_tokens', 1000)
+            )
 
+            master_summary = response.choices[0].message.content
+
+             # Limpa o texto removendo marcadores Markdown
+            master_summary = (master_summary
+                .replace('**', '')  # Remove negrito
+                .replace('\\n', ' ')  # Substitui \n literal por espaço
+                .replace('\n', ' ')   # Substitui quebras de linha reais por espaço
+                .replace('  ', ' ')   # Remove espaços duplos
+                .strip()              # Remove espaços extras no início e fim
+            )
+            
             return {
                 'master_summary': master_summary,
                 'source_count': len(summaries_by_source),
@@ -156,23 +192,3 @@ class DataSource(ABC):
                 'error': str(e),
                 'generated_at': datetime.now().isoformat()
             }
-
-    def _call_llm(self, prompt: str) -> str:
-
-        logger.info(f"Calling LLM API with prompt: {prompt}")
-        
-        """Helper method to call LLM API"""
-        try:
-            response = openai.ChatCompletion.create(
-                model=self.config.get('llm', {}).get('model', 'gpt-3.5-turbo'),
-                messages=[
-                    {"role": "system", "content": "Você é um assistente especializado em análise e síntese de notícias."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=self.config.get('llm', {}).get('temperature', 0.7),
-                max_tokens=self.config.get('llm', {}).get('max_tokens', 500)
-            )
-            return response.choices[0].message.content
-        except Exception as e:
-            self.logger.error(f"LLM API error: {str(e)}")
-            return ""
