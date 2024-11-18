@@ -70,4 +70,4 @@ class NewsRSSSource(DataSource):
             'link': entry.link,
             'pub_date': entry.published,
             'collected_at': datetime.now().isoformat()
-        } for entry in entries[:3]]
+        } for entry in entries]

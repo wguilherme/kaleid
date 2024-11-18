@@ -154,15 +154,17 @@ class DataSource(ABC):
                 - Mantenha cada tópico conciso, direto e focado apenas no essencial.
                 - Priorize informações acionáveis e de alto impacto.
                 - Use linguagem clara e evite redundâncias.
+                - O resumo deve ser conciso e direto ao ponto, transmitindo informação de maneira clara e objetiva.
+                - Evite a duplicidade de informação.
                 """
 
             response = self.openai_client.chat.completions.create(
-                model=self.config.get('llm', {}).get('model', 'gpt-3.5-turbo'),
+                model=self.config.get('llm', {}).get('model', 'gpt-4o'),
                 messages=[
                     {"role": "system", "content": "Você é um analista especializado em sintetizar informações de múltiplas fontes e identificar padrões relevantes."},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=self.config.get('llm', {}).get('temperature', 0.7),
+                temperature=self.config.get('llm', {}).get('temperature', 0.3),
                 max_tokens=self.config.get('llm', {}).get('max_tokens', 1000)
             )
 
