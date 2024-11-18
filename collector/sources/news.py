@@ -25,10 +25,12 @@ class NewsRSSSource(DataSource):
             return []
 
     def process(self, entries: List[Dict]) -> List[Dict]:
+
+        logger.info(f"Processing {len(entries)} entries")
+
         if not entries:
             return []
 
-        # Determina a URL correta baseado na estrutura do config
         try:
             if isinstance(self.config, dict) and 'sources' in self.config:
                 for source in self.config['sources']:
@@ -41,26 +43,24 @@ class NewsRSSSource(DataSource):
             logger.error(f"Error getting source URL from config: {str(e)}")
             source_url = "unknown"
 
-        logger.info(f"Processing {len(entries)} entries")
-
         # Processa o primeiro item separadamente para poder logar
-        # first_entry = entries[0]
+        first_entry = entries[0]
 
-        # try:
-        #     first_processed = {
-        #         'type': 'news',
-        #         'source': source_url,
-        #         'title': getattr(first_entry, 'title', 'No title'),
-        #         'description': getattr(first_entry, 'description', 'No description'),
-        #         'link': getattr(first_entry, 'link', 'No link'),
-        #         'pub_date': getattr(first_entry, 'published', 'No date'),
-        #         'collected_at': datetime.now().isoformat()
-        #     }
-        # except Exception as e:
-        #     logger.error(f"Error processing first entry: {str(e)}")
-        #     first_processed = None
+        try:
+            first_processed = {
+                'type': 'news',
+                'source': source_url,
+                'title': getattr(first_entry, 'title', 'No title'),
+                'description': getattr(first_entry, 'description', 'No description'),
+                'link': getattr(first_entry, 'link', 'No link'),
+                'pub_date': getattr(first_entry, 'published', 'No date'),
+                'collected_at': datetime.now().isoformat()
+            }
+        except Exception as e:
+            logger.error(f"Error processing first entry: {str(e)}")
+            first_processed = None
         
-        # logger.info(f"First processed entry: {first_processed}")
+        logger.info(f"First processed entry: {first_processed}")
 
         return [{
             'type': 'news',

@@ -10,6 +10,7 @@ services:
       - /app/processors/__pycache__
     environment:
       - PYTHONUNBUFFERED=1
-      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONDONTWRITEBYTECODE=1\
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
     ports:
       - "5678:5678" # para debugging

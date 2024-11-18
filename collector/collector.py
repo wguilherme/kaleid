@@ -24,7 +24,7 @@ class DataCollector:
         for source_name, source in self.sources.items():
             try:
                 logger.info(f"Collecting data from {source_name}")
-                logger.debug(f"Config for {source_name}: {source.config}")
+                
                 collected_data['data'][source_name] = source.collect()
 
                 logger.info(f"Data collected from {source_name}")
