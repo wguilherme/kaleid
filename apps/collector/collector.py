@@ -28,7 +28,6 @@ class DataCollector:
                 collected_data['data'][source_name] = source.collect()
 
                 logger.info(f"Data collected from {source_name}")
-                logger.debug(f"Collected data for {source_name}: {collected_data['data'][source_name]}")
             except Exception as e:
                 logger.error(f"Error collecting from {source_name}: {str(e)}")
                 collected_data['data'][source_name] = []

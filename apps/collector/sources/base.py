@@ -2,6 +2,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict, List, Any
 from bs4 import BeautifulSoup
+from .mongodb import MongoDBHandler
 from openai import OpenAI
 from datetime import datetime
 import re
@@ -9,13 +10,35 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class DataSource(ABC):
+    """Abstract base class for data sources."""
     def __init__(self, config: Dict[str, Any]):
+
+        # config
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.openai_client = OpenAI(api_key=config.get('openai_api_key'))
+
+        # openai
+        self.openai_client = OpenAI(api_key=config.get('OPENAI_API_KEY'))
+
+        # mongodb
+        try:
+            mongodb_config = {
+                'MONGODB_URI': 'mongodb://admin:12345678@kaleid-mongodb:27017/?authSource=admin',
+                'MONGODB_DATABASE': 'kaleid',
+                'MONGODB_COLLECTION': 'summaries'
+            }
+            
+            self.mongo_handler = MongoDBHandler(mongodb_config)
+            self.logger.info("MongoDB connection initialized successfully")
+        except Exception as e:
+            self.logger.error(f"Failed to initialize MongoDB connection: {str(e)}")
+            self.logger.info(e)
+            self.mongo_handler = None
 
     def enrich(self, data: List[Dict]) -> List[Dict]:
+        """Enrich data with summary"""
         enriched_data = []
         
         for item in data:
@@ -54,8 +77,7 @@ class DataSource(ABC):
                 enriched_data.append(item)
                 
         return enriched_data
-    
-    
+        
     @staticmethod
     def clean_html(html_content: str) -> str:
         """Remove HTML tags and clean up text content."""
@@ -63,12 +85,10 @@ class DataSource(ABC):
             return ''
         
         try:
-            # Remove HTML tags
+            # remove html syntax tags
             soup = BeautifulSoup(html_content, 'html.parser')
             text = soup.get_text()
-            
-            # Remove extra whitespace
-            text = re.sub(r'\s+', ' ', text).strip()
+            text = re.sub(r'\s+', ' ', text).strip()  # remove extra spaces
             
             return text
         except Exception as e:
@@ -82,7 +102,6 @@ class DataSource(ABC):
         if len(clean_text) > max_length:
             return clean_text[:max_length] + '...'
         return clean_text
-
 
     def collect(self) -> List[Dict]:
         """Main method to fetch and process data"""
@@ -100,7 +119,6 @@ class DataSource(ABC):
             self.logger.warning("No data processed")
             return []
 
-        # Adicionar aqui o enrich
         enriched_data = self.enrich(processed_data)
 
         if not enriched_data:
@@ -108,10 +126,23 @@ class DataSource(ABC):
             return []
 
         self.logger.info(f"Data enriched from {self.__class__.__name__}")
-        # self.logger.debug(f"Enriched data: {enriched_data}")
 
         try:
             master_summary = self.generate_master_summary(enriched_data)
+
+            if self.mongo_handler:
+                if self.mongo_handler.check_connection():
+                    self.mongo_handler.save_to_mongodb(master_summary)
+                else:
+                    try:
+                        self.logger.info("Attempting to reconnect to MongoDB...")
+                        self.mongo_handler.reconnect()
+                        self.mongo_handler.save_to_mongodb(master_summary)
+                    except Exception as e:
+                        self.logger.error(f"MongoDB reconnection failed: {str(e)}")
+            else:
+                self.logger.warning("MongoDB handler not available. Skipping save operation.")
+
             enriched_data.insert(0, {
                 'type': 'master_summary',
                 'title': 'Master Summary',
@@ -122,6 +153,7 @@ class DataSource(ABC):
                 'total_items': master_summary['total_items'],
                 'sources': master_summary['sources']
             })
+
         except Exception as e:
             self.logger.error(f"Error adding master summary: {str(e)}")
         
@@ -130,7 +162,7 @@ class DataSource(ABC):
     def generate_master_summary(self, all_sources_data: List[Dict]) -> Dict:
         """Generate a master summary from all sources"""
         try:
-            # Agrupa sumários por fonte
+            # group summaries by source
             summaries_by_source = {}
             for item in all_sources_data:
                 source = item.get('source', 'unknown')
@@ -139,30 +171,22 @@ class DataSource(ABC):
                 if 'individual_summary' in item:
                     summaries_by_source[source].append(item['individual_summary'])
 
-            # Cria prompt para resumo final
-            prompt = """Analisando todas as notícias coletadas:
+            # base prompt
+            prompt = """Analisando todas as notícias coletadas:"""
 
-    """
             for source, summaries in summaries_by_source.items():
                 prompt += f"Fonte: {source}\n"
                 for summary in summaries:
                     prompt += f"- {summary}\n"
                 prompt += "\n"
 
-            prompt += """
-                 Forneça uma síntese executiva e objetiva seguindo este formato:
-                - Mantenha cada tópico conciso, direto e focado apenas no essencial.
-                - Priorize informações acionáveis e de alto impacto.
-                - Use linguagem clara e evite redundâncias.
-                - O resumo deve ser conciso e direto ao ponto, transmitindo informação de maneira clara e objetiva.
-                - Evite a duplicidade de informação.
-                """
+            prompt += """Forneça um resumo conciso de todas as notícias coletadas, destacando os pontos relevantes e identificando padrões de tendência."""
 
             response = self.openai_client.chat.completions.create(
                 model=self.config.get('llm', {}).get('model', 'gpt-4o'),
                 messages=[
                     {"role": "system", "content": "Você é um analista especializado em sintetizar informações de múltiplas fontes e identificar padrões relevantes."},
-                    {"role": "user", "content": prompt}
+                    {"role": "user", "content": prompt},
                 ],
                 temperature=self.config.get('llm', {}).get('temperature', 0.3),
                 max_tokens=self.config.get('llm', {}).get('max_tokens', 1000)
@@ -170,7 +194,7 @@ class DataSource(ABC):
 
             master_summary = response.choices[0].message.content
 
-             # Limpa o texto removendo marcadores Markdown
+            # cleanup master summary
             master_summary = (master_summary
                 .replace('**', '')  # Remove negrito
                 .replace('\\n', ' ')  # Substitui \n literal por espaço
@@ -193,3 +217,26 @@ class DataSource(ABC):
                 'error': str(e),
                 'generated_at': datetime.now().isoformat()
             }
+    def save_to_mongodb(self, master_summary: Dict) -> bool:
+        """Save master summary to MongoDB"""
+        if not self.mongo_handler:
+            self.logger.error("MongoDB handler not initialized")
+            return False
+            
+        try:
+            if not master_summary:
+                self.logger.error("Empty master summary provided")
+                return False
+
+            master_summary['created_at'] = datetime.now(timezone.utc)
+            
+            result = self.mongo_handler.save_to_mongodb(master_summary)
+            if result:
+                self.logger.info("Master summary saved successfully")
+            else:
+                self.logger.error("Failed to save master summary")
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"Error saving to MongoDB: {str(e)}")
+            return False

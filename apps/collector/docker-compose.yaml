@@ -14,3 +14,9 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     ports:
       - "5678:5678" # para debugging
+    networks:
+      - kaleid
+
+networks:
+  kaleid:
+    external: true
